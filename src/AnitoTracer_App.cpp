@@ -20,6 +20,9 @@
 
 #include "Physics/PhysicsEngine.hpp"
 
+#include "Objects/Components/Physics/RigidBody.hpp"
+#include "Objects/Components/Physics/Collider.hpp"
+
 #include ANITO_EVENT_INCLUDES
 
 using namespace Diligent;
@@ -208,6 +211,27 @@ void AnitoTracer_App::InitManagers()
     ObjectFactory& objFactory = ObjectFactory::GetInstance();
     m_MainCam = objFactory.CreateRootCameraObject("Main Camera");
     m_MainCam.GetPtr()->GetTransform()->SetPosition(glm::vec3(0, 0, -10.f));
+
+    // For physics testing
+    // Floor: Collider only, no RigidBody -> should auto-create a StaticBody
+    HierarchyObject::Ref floor = objFactory.CreateCubePrimitive("Floor");
+    floor.GetPtr()->GetTransform()->SetPosition(glm::vec3(0.0f, -2.0f, 0.0f));
+    floor.GetPtr()->GetTransform()->SetScale(glm::vec3(20.0f, 1.0f, 20.0f));
+    floor.GetPtr()->AddComponent(std::make_unique<Collider>(
+        floor,
+        IPhysicsEngine::ShapeType::Box,
+        IPhysicsEngine::ShapeParams{ glm::vec3(20.0f, 1.0f, 20.0f) }
+    ));
+
+    // Dropper: Collider added first, then RigidBody -> should adopt the collider
+    HierarchyObject::Ref dropper = objFactory.CreateCubePrimitive("TestDropper");
+    dropper.GetPtr()->GetTransform()->SetPosition(glm::vec3(0.0f, 5.0f, 0.0f));
+    dropper.GetPtr()->AddComponent(std::make_unique<Collider>(
+        dropper,
+        IPhysicsEngine::ShapeType::Box,
+        IPhysicsEngine::ShapeParams{ glm::vec3(1.0f, 1.0f, 1.0f) }
+    ));
+    dropper.GetPtr()->AddComponent(std::make_unique<RigidBody>(dropper, 1.0f));
 }
 
 void AnitoTracer_App::CreateMSAABuffers()
